@@ -16,15 +16,48 @@ app.use(express.json({ limit: '15mb' }));
 app.use(express.urlencoded({ extended: true, limit: '15mb' }));
 app.use(morgan('dev'));
 
-// Sog'lomlik holati (Health Check)
-app.get('/api/health', (req: Request, res: Response) => {
+import mongoose from 'mongoose';
+
+// Sog'lomlik holati (Health & Live Check)
+const healthHandler = (req: Request, res: Response) => {
+  const dbState = mongoose.connection.readyState;
+  const dbStatusMap: Record<number, string> = {
+    0: 'disconnected',
+    1: 'connected',
+    2: 'connecting',
+    3: 'disconnecting',
+  };
+
+  const uptimeSec = Math.floor(process.uptime());
+  const hours = Math.floor(uptimeSec / 3600);
+  const minutes = Math.floor((uptimeSec % 3600) / 60);
+  const seconds = uptimeSec % 60;
+  const uptimeString = `${hours}h ${minutes}m ${seconds}s`;
+
   res.status(200).json({
     status: 'online',
     service: 'TermoPlan Backend API',
+    uptime: uptimeString,
+    uptimeSeconds: uptimeSec,
+    database: {
+      status: dbStatusMap[dbState] || 'unknown',
+      connected: dbState === 1,
+    },
+    memory: {
+      rss: `${Math.round(process.memoryUsage().rss / 1024 / 1024)}MB`,
+      heapUsed: `${Math.round(process.memoryUsage().heapUsed / 1024 / 1024)}MB`,
+    },
     version: '1.0.0',
     timestamp: new Date().toISOString(),
   });
-});
+};
+
+// Har qanday monitoring xizmati (UptimeRobot, Render, brauzer) uchun ochiq yo'llar
+app.get('/api/health', healthHandler);
+app.get('/api/live', healthHandler);
+app.get('/health', healthHandler);
+app.get('/live', healthHandler);
+app.get('/ping', (req: Request, res: Response) => res.status(200).send('pong'));
 
 // Asosiy API yo'llari
 app.use('/api/auth', authRoutes);
