@@ -18,8 +18,14 @@ export class ProjectController {
   public static async getAllProjects(req: AuthRequest, res: Response): Promise<void> {
     try {
       const query: any = {};
-      if (req.userId && req.userId !== 'demo_user_id') {
-        query.userId = req.userId;
+      // Support bo'lsa butun tizimdagi barcha loyihalarni ko'radi
+      // Oddiy foydalanuvchi esa FAQAT o'zining loyihalarini ko'radi (bir-birinikini ko'rmaydi)
+      if (req.userRole !== 'support' && req.userRole !== 'admin') {
+        if (req.userId && req.userId !== 'demo_user_id') {
+          query.userId = req.userId;
+        } else {
+          query.userId = '000000000000000000000000';
+        }
       }
 
       const projects = await Project.find(query)
@@ -43,6 +49,13 @@ export class ProjectController {
       if (!project) {
         res.status(404).json({ success: false, message: 'Loyiha topilmadi' });
         return;
+      }
+
+      if (req.userRole !== 'support' && req.userRole !== 'admin') {
+        if (project.userId && project.userId.toString() !== req.userId) {
+          res.status(403).json({ success: false, message: 'Ushbu loyihaga kirish huquqiga ega emassiz' });
+          return;
+        }
       }
 
       const rooms = await Room.find({ projectId: id });
@@ -106,11 +119,21 @@ export class ProjectController {
   public static async updateProject(req: AuthRequest, res: Response): Promise<void> {
     try {
       const { id } = req.params;
-      const project = await Project.findByIdAndUpdate(id, req.body, { new: true });
+      const project = await Project.findById(id);
       if (!project) {
         res.status(404).json({ success: false, message: 'Loyiha topilmadi' });
         return;
       }
+
+      if (req.userRole !== 'support' && req.userRole !== 'admin') {
+        if (project.userId && project.userId.toString() !== req.userId) {
+          res.status(403).json({ success: false, message: 'Ushbu loyihani o‘zgartirish huquqiga ega emassiz' });
+          return;
+        }
+      }
+
+      Object.assign(project, req.body);
+      await project.save();
 
       res.status(200).json({
         success: true,
@@ -125,6 +148,19 @@ export class ProjectController {
   public static async deleteProject(req: AuthRequest, res: Response): Promise<void> {
     try {
       const { id } = req.params;
+      const project = await Project.findById(id);
+      if (!project) {
+        res.status(404).json({ success: false, message: 'Loyiha topilmadi' });
+        return;
+      }
+
+      if (req.userRole !== 'support' && req.userRole !== 'admin') {
+        if (project.userId && project.userId.toString() !== req.userId) {
+          res.status(403).json({ success: false, message: 'Ushbu loyihani o‘chirish huquqiga ega emassiz' });
+          return;
+        }
+      }
+
       await Project.findByIdAndDelete(id);
       await Room.deleteMany({ projectId: id });
       await Calculation.deleteMany({ projectId: id });

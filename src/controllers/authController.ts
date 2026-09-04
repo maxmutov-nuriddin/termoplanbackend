@@ -2,6 +2,7 @@ import { Request, Response } from 'express';
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 import { User } from '../models/User';
+import { Project } from '../models/Project';
 import { AuthRequest } from '../middleware/authMiddleware';
 
 export class AuthController {
@@ -174,6 +175,41 @@ export class AuthController {
           role: user.role,
           company: user.company,
         },
+      });
+    } catch (err: any) {
+      res.status(500).json({ success: false, message: err.message });
+    }
+  }
+
+  public static async getAllUsers(req: AuthRequest, res: Response): Promise<void> {
+    try {
+      if (req.userRole !== 'support' && req.userRole !== 'admin') {
+        res.status(403).json({ success: false, message: 'Faqat Support foydalanuvchilariga ruxsat berilgan' });
+        return;
+      }
+
+      const users = await User.find({}).select('-password').sort({ createdAt: -1 });
+
+      const usersWithStats = await Promise.all(
+        users.map(async (u) => {
+          const count = await Project.countDocuments({ userId: u._id });
+          return {
+            id: u._id,
+            name: u.name,
+            email: u.email,
+            phone: u.phone || '',
+            role: u.role,
+            company: u.company || '',
+            projectsCount: count,
+            createdAt: u.createdAt,
+          };
+        })
+      );
+
+      res.status(200).json({
+        success: true,
+        count: usersWithStats.length,
+        users: usersWithStats,
       });
     } catch (err: any) {
       res.status(500).json({ success: false, message: err.message });

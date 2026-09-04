@@ -8,4 +8,5 @@ router.post('/register', authController_1.AuthController.register);
 router.post('/login', authController_1.AuthController.login);
 router.get('/profile', authMiddleware_1.authMiddleware, authController_1.AuthController.getProfile);
 router.put('/profile', authMiddleware_1.authMiddleware, authController_1.AuthController.updateProfile);
+router.get('/users', authMiddleware_1.authMiddleware, authController_1.AuthController.getAllUsers);
 exports.default = router;

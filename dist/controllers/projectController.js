@@ -17,8 +17,15 @@ class ProjectController {
     static async getAllProjects(req, res) {
         try {
             const query = {};
-            if (req.userId && req.userId !== 'demo_user_id') {
-                query.userId = req.userId;
+            // Support bo'lsa butun tizimdagi barcha loyihalarni ko'radi
+            // Oddiy foydalanuvchi esa FAQAT o'zining loyihalarini ko'radi (bir-birinikini ko'rmaydi)
+            if (req.userRole !== 'support' && req.userRole !== 'admin') {
+                if (req.userId && req.userId !== 'demo_user_id') {
+                    query.userId = req.userId;
+                }
+                else {
+                    query.userId = '000000000000000000000000';
+                }
             }
             const projects = await Project_1.Project.find(query)
                 .populate('rooms')
@@ -40,6 +47,12 @@ class ProjectController {
             if (!project) {
                 res.status(404).json({ success: false, message: 'Loyiha topilmadi' });
                 return;
+            }
+            if (req.userRole !== 'support' && req.userRole !== 'admin') {
+                if (project.userId && project.userId.toString() !== req.userId) {
+                    res.status(403).json({ success: false, message: 'Ushbu loyihaga kirish huquqiga ega emassiz' });
+                    return;
+                }
             }
             const rooms = await Room_1.Room.find({ projectId: id });
             const calculations = await Calculation_1.Calculation.find({ projectId: id });
@@ -87,11 +100,19 @@ class ProjectController {
     static async updateProject(req, res) {
         try {
             const { id } = req.params;
-            const project = await Project_1.Project.findByIdAndUpdate(id, req.body, { new: true });
+            const project = await Project_1.Project.findById(id);
             if (!project) {
                 res.status(404).json({ success: false, message: 'Loyiha topilmadi' });
                 return;
             }
+            if (req.userRole !== 'support' && req.userRole !== 'admin') {
+                if (project.userId && project.userId.toString() !== req.userId) {
+                    res.status(403).json({ success: false, message: 'Ushbu loyihani o‘zgartirish huquqiga ega emassiz' });
+                    return;
+                }
+            }
+            Object.assign(project, req.body);
+            await project.save();
             res.status(200).json({
                 success: true,
                 message: 'Loyiha maʼlumotlari yangilandi',
@@ -105,6 +126,17 @@ class ProjectController {
     static async deleteProject(req, res) {
         try {
             const { id } = req.params;
+            const project = await Project_1.Project.findById(id);
+            if (!project) {
+                res.status(404).json({ success: false, message: 'Loyiha topilmadi' });
+                return;
+            }
+            if (req.userRole !== 'support' && req.userRole !== 'admin') {
+                if (project.userId && project.userId.toString() !== req.userId) {
+                    res.status(403).json({ success: false, message: 'Ushbu loyihani o‘chirish huquqiga ega emassiz' });
+                    return;
+                }
+            }
             await Project_1.Project.findByIdAndDelete(id);
             await Room_1.Room.deleteMany({ projectId: id });
             await Calculation_1.Calculation.deleteMany({ projectId: id });

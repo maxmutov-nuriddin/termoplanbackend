@@ -7,6 +7,7 @@ exports.AuthController = void 0;
 const bcryptjs_1 = __importDefault(require("bcryptjs"));
 const jsonwebtoken_1 = __importDefault(require("jsonwebtoken"));
 const User_1 = require("../models/User");
+const Project_1 = require("../models/Project");
 class AuthController {
     static async register(req, res) {
         try {
@@ -165,6 +166,36 @@ class AuthController {
                     role: user.role,
                     company: user.company,
                 },
+            });
+        }
+        catch (err) {
+            res.status(500).json({ success: false, message: err.message });
+        }
+    }
+    static async getAllUsers(req, res) {
+        try {
+            if (req.userRole !== 'support' && req.userRole !== 'admin') {
+                res.status(403).json({ success: false, message: 'Faqat Support foydalanuvchilariga ruxsat berilgan' });
+                return;
+            }
+            const users = await User_1.User.find({}).select('-password').sort({ createdAt: -1 });
+            const usersWithStats = await Promise.all(users.map(async (u) => {
+                const count = await Project_1.Project.countDocuments({ userId: u._id });
+                return {
+                    id: u._id,
+                    name: u.name,
+                    email: u.email,
+                    phone: u.phone || '',
+                    role: u.role,
+                    company: u.company || '',
+                    projectsCount: count,
+                    createdAt: u.createdAt,
+                };
+            }));
+            res.status(200).json({
+                success: true,
+                count: usersWithStats.length,
+                users: usersWithStats,
             });
         }
         catch (err) {
