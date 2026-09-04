@@ -111,5 +111,65 @@ class AuthController {
             res.status(500).json({ success: false, message: err.message });
         }
     }
+    static async updateProfile(req, res) {
+        try {
+            if (!req.userId || req.userId === 'demo_user_id') {
+                const { name, phone, company } = req.body;
+                res.status(200).json({
+                    success: true,
+                    message: 'Maʼlumotlar muvaffaqiyatli yangilandi (Demo)',
+                    user: {
+                        id: 'demo_user_id',
+                        name: name || 'Foydalanuvchi',
+                        email: 'user@termoplan.uz',
+                        phone: phone || '+998 90 000-00-00',
+                        role: 'user',
+                        company: company || 'TermoPlan',
+                    },
+                });
+                return;
+            }
+            const { name, phone, company, currentPassword, newPassword } = req.body;
+            const user = await User_1.User.findById(req.userId);
+            if (!user) {
+                res.status(404).json({ success: false, message: 'Foydalanuvchi topilmadi' });
+                return;
+            }
+            if (name)
+                user.name = name.trim();
+            if (phone !== undefined)
+                user.phone = phone.trim();
+            if (company !== undefined)
+                user.company = company.trim();
+            if (newPassword) {
+                if (!currentPassword) {
+                    res.status(400).json({ success: false, message: 'Parolni o‘zgartirish uchun hozirgi parolni kiriting' });
+                    return;
+                }
+                const isMatch = await bcryptjs_1.default.compare(currentPassword, user.password || '');
+                if (!isMatch) {
+                    res.status(400).json({ success: false, message: 'Hozirgi parol noto‘g‘ri kiritildi' });
+                    return;
+                }
+                user.password = await bcryptjs_1.default.hash(newPassword, 10);
+            }
+            await user.save();
+            res.status(200).json({
+                success: true,
+                message: 'Maʼlumotlar muvaffaqiyatli yangilandi',
+                user: {
+                    id: user._id,
+                    name: user.name,
+                    email: user.email,
+                    phone: user.phone,
+                    role: user.role,
+                    company: user.company,
+                },
+            });
+        }
+        catch (err) {
+            res.status(500).json({ success: false, message: err.message });
+        }
+    }
 }
 exports.AuthController = AuthController;
