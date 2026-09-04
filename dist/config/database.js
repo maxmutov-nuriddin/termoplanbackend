@@ -6,7 +6,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.connectDatabase = void 0;
 const mongoose_1 = __importDefault(require("mongoose"));
 const connectDatabase = async () => {
-    const uri = process.env.MONGODB_URI || 'mongodb://127.0.0.1:27017/termoplan';
+    const uri = process.env.MONGODB_URI || process.env.MONGO_URI || 'mongodb://127.0.0.1:27017/termoplan';
     try {
         mongoose_1.default.set('strictQuery', false);
         await mongoose_1.default.connect(uri, {

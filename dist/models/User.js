@@ -42,8 +42,8 @@ const UserSchema = new mongoose_1.Schema({
     phone: { type: String, trim: true },
     role: {
         type: String,
-        enum: ['engineer', 'installer', 'client', 'admin'],
-        default: 'engineer',
+        enum: ['user', 'support', 'engineer', 'installer', 'client', 'admin'],
+        default: 'user',
     },
     company: { type: String, trim: true },
 }, { timestamps: true });

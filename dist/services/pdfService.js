@@ -201,8 +201,8 @@ async function generateProjectPdfBuffer(data) {
             // =========================================================================
             doc.addPage();
             doc.rect(40, 40, 515, 45).fillAndStroke('#FAF5FF', '#7E22CE');
-            doc.fillColor('#7E22CE').fontSize(16).text('BIRLASHGAN SMETA & MUHANDISLIK YO‘RIQNOMASI', 55, 52);
-            doc.fillColor(textGray).fontSize(9).text('Barcha mavsumiy materiallar ro‘yxati, xarajatlar va o‘rnatish bo‘yicha ko‘rsatma', 55, 70);
+            doc.fillColor('#7E22CE').fontSize(16).text('KERAKLI MAHSULOTLAR RO‘YXATI & BIRLASHGAN SMETA', 55, 52);
+            doc.fillColor(textGray).fontSize(9).text('Barcha mavsumiy mahsulotlar va materiallar ro‘yxati, xarajatlar va o‘rnatish yo‘riqnomasi', 55, 70);
             // Smeta Jadvali
             currentY = 95;
             doc.rect(40, currentY, 515, 260).fillAndStroke(bgLight, borderGray);

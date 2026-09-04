@@ -25,7 +25,7 @@ export class AuthController {
         email: email.toLowerCase(),
         password: hashedPassword,
         phone,
-        role: role || 'engineer',
+        role: role || 'user',
         company,
       });
       await user.save();
